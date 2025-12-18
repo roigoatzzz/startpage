@@ -134,6 +134,20 @@ Enter your preferred search engine URL with query parameter, e.g.:
 
 All settings are previewed in real-time and saved automatically.
 
+## Sharing Configuration
+
+You can share your configuration and bookmarks across devices using Git:
+
+1. Export your current settings using `:export`
+2. Copy the exported content to `docs/data.json`
+3. Commit and push to Git:
+   ```bash
+   git add docs/data.json
+   git commit -m "Update shared configuration"
+   git push
+   ```
+4. On other devices, pull the changes and use `:reset` to clear localStorage, then reload to use the shared configuration
+
 ## Data Management
 
 ### Export Settings
@@ -164,25 +178,38 @@ startpage/
 │   ├── bookmarks.html      # Bookmark editor
 │   ├── script.js           # Main application logic
 │   ├── style.css           # Shared styles
-│   ├── config.json         # Default configuration (fallback)
-│   └── bookmark.json       # Default bookmarks (fallback)
+│   └── data.json           # Default configuration and bookmarks (fallback)
+├── compose.yaml            # Docker Compose configuration
 └── README.md
 ```
 
-## Default Configuration
+## Default Data Structure
+
+The `data.json` file contains both configuration and bookmarks:
 
 ```json
 {
-  "backgroundColor": "#000000",
-  "textColor": "#ffffff",
-  "accentColor": "#4a9eff",
-  "searchEngine": "https://www.startpage.com/search?q=",
-  "backgroundImage": "",
-  "backgroundBlur": 0,
-  "maskColor": "#000000",
-  "maskOpacity": 60
+  "config": {
+    "backgroundColor": "#000000",
+    "textColor": "#ffffff",
+    "accentColor": "#4a9eff",
+    "searchEngine": "https://www.startpage.com/search?q=",
+    "backgroundImage": "",
+    "backgroundBlur": 0,
+    "maskColor": "#000000",
+    "maskOpacity": 60
+  },
+  "bookmarks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com",
+      "tags": ["dev", "code"]
+    }
+  ]
 }
 ```
+
+This matches the export format, making it easy to share configurations via Git.
 
 ## Keyboard Shortcuts
 

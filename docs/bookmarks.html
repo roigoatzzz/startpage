@@ -230,10 +230,11 @@
         bookmarks = JSON.parse(saved);
       } else {
         try {
-          const response = await fetch('bookmark.json');
-          bookmarks = await response.json();
+          const response = await fetch('data.json');
+          const data = await response.json();
+          bookmarks = data.bookmarks || defaultBookmarks;
         } catch (error) {
-          console.error('Failed to load bookmarks:', error);
+          console.error('Failed to load data.json:', error);
           bookmarks = defaultBookmarks;
         }
       }
@@ -449,7 +450,7 @@
     }
 
     function isValidUrl(url) {
-      if (!url || url.trim() === '') return false;
+      if (!url) return false;
       try {
         new URL(url);
         return true;

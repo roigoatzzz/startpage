@@ -194,11 +194,25 @@
       updateSliderValue('maskOpacity', 'opacityValue');
     }
 
-    function loadSettings() {
+    async function loadSettings() {
       const saved = localStorage.getItem(STORAGE_KEY);
-      const config = saved ? JSON.parse(saved) : DEFAULT_CONFIG;
-      setInputsFromConfig(config);
-      applyTheme(config);
+      if (saved) {
+        const config = JSON.parse(saved);
+        setInputsFromConfig(config);
+        applyTheme(config);
+      } else {
+        try {
+          const response = await fetch('data.json');
+          const data = await response.json();
+          const config = data.config || DEFAULT_CONFIG;
+          setInputsFromConfig(config);
+          applyTheme(config);
+        } catch (error) {
+          console.error('Failed to load data.json:', error);
+          setInputsFromConfig(DEFAULT_CONFIG);
+          applyTheme(DEFAULT_CONFIG);
+        }
+      }
     }
 
     function applyTheme(config) {

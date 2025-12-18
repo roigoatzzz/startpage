@@ -29,42 +29,31 @@ const STYLE_CONSTANTS = {
 };
 
 /**
- * Generic function to load data from localStorage or JSON file.
- * @param {string} storageKey - localStorage key
- * @param {string} jsonFile - JSON file path
- * @param {*} fallback - Fallback value if both sources fail
- * @returns {Promise<*>} - Loaded data
+ * Loads data from localStorage or data.json file.
+ * Falls back to default values if both sources fail.
  */
-async function loadFromStorageOrFile(storageKey, jsonFile, fallback) {
-  const saved = localStorage.getItem(storageKey);
-  if (saved) {
-    return JSON.parse(saved);
+async function loadData() {
+  // Try localStorage first
+  const savedConfig = localStorage.getItem(STORAGE_KEYS.CONFIG);
+  const savedBookmarks = localStorage.getItem(STORAGE_KEYS.BOOKMARKS);
+
+  if (savedConfig && savedBookmarks) {
+    config = JSON.parse(savedConfig);
+    bookmarks = JSON.parse(savedBookmarks);
+    return;
   }
 
+  // If localStorage is incomplete, try loading from data.json
   try {
-    const response = await fetch(jsonFile);
-    return await response.json();
+    const response = await fetch('data.json');
+    const data = await response.json();
+    config = data.config || DEFAULT_CONFIG;
+    bookmarks = data.bookmarks || [];
   } catch (error) {
-    console.error(`Failed to load ${jsonFile}:`, error);
-    return fallback;
+    console.error('Failed to load data.json:', error);
+    config = DEFAULT_CONFIG;
+    bookmarks = [];
   }
-}
-
-/**
- * Loads configuration from localStorage or config.json file.
- * Falls back to DEFAULT_CONFIG if both sources fail.
- */
-async function loadConfig() {
-  config = await loadFromStorageOrFile(STORAGE_KEYS.CONFIG, 'config.json', DEFAULT_CONFIG);
-  applyConfig();
-}
-
-/**
- * Loads bookmarks from localStorage or bookmark.json file.
- * Falls back to empty array if both sources fail.
- */
-async function loadBookmarks() {
-  bookmarks = await loadFromStorageOrFile(STORAGE_KEYS.BOOKMARKS, 'bookmark.json', []);
 }
 
 function getOrCreateStyleElement(id) {
@@ -462,16 +451,15 @@ function toggleHelp() {
  * Updates the fade effect classes based on scroll position.
  */
 function updateScrollFade() {
-  const container = resultsContainer;
-  const scrollTop = container.scrollTop;
-  const scrollHeight = container.scrollHeight;
-  const clientHeight = container.clientHeight;
+  const scrollTop = resultsContainer.scrollTop;
+  const scrollHeight = resultsContainer.scrollHeight;
+  const clientHeight = resultsContainer.clientHeight;
 
   // Check if content is scrollable
   const isScrollable = scrollHeight > clientHeight;
 
   if (!isScrollable) {
-    container.classList.remove('has-scroll-top', 'has-scroll-bottom');
+    resultsContainer.classList.remove('has-scroll-top', 'has-scroll-bottom');
     return;
   }
 
@@ -481,41 +469,27 @@ function updateScrollFade() {
   // Check if not at bottom (with small threshold)
   const hasScrollBottom = scrollTop < scrollHeight - clientHeight - 10;
 
-  container.classList.toggle('has-scroll-top', hasScrollTop);
-  container.classList.toggle('has-scroll-bottom', hasScrollBottom);
+  resultsContainer.classList.toggle('has-scroll-top', hasScrollTop);
+  resultsContainer.classList.toggle('has-scroll-bottom', hasScrollBottom);
 }
 
 /**
  * Scrolls the selected item into view, keeping it centered when possible.
  */
 function scrollSelectedIntoView() {
-  const container = resultsContainer;
-  const selectedElement = container.querySelector('.bookmark-item.selected');
-
+  const selectedElement = resultsContainer.querySelector('.bookmark-item.selected');
   if (!selectedElement) return;
 
-  const containerRect = container.getBoundingClientRect();
-  const elementRect = selectedElement.getBoundingClientRect();
-  const containerHeight = containerRect.height;
-  const elementHeight = elementRect.height;
-
-  // Calculate the center position
+  const containerHeight = resultsContainer.clientHeight;
+  const elementHeight = selectedElement.offsetHeight;
   const centerPosition = containerHeight / 2 - elementHeight / 2;
+  const desiredScroll = selectedElement.offsetTop - centerPosition;
 
-  // Get current scroll position relative to container
-  const elementTop = selectedElement.offsetTop;
-  const currentScroll = container.scrollTop;
-
-  // Calculate desired scroll position to center the element
-  const desiredScroll = elementTop - centerPosition;
-
-  // Smooth scroll to the desired position
-  container.scrollTo({
+  resultsContainer.scrollTo({
     top: desiredScroll,
     behavior: 'smooth'
   });
 
-  // Update fade effects after scroll
   setTimeout(updateScrollFade, 100);
 }
 
@@ -582,17 +556,9 @@ document.addEventListener('keydown', (e) => {
 });
 
 function isUrl(query) {
-  // Check if it looks like a URL or domain
-  if (query.startsWith('http://') || query.startsWith('https://')) {
-    return true;
-  }
-
-  // Check if it looks like a domain (contains dot and no spaces)
-  if (/^[a-zA-Z0-9][-a-zA-Z0-9]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)+/.test(query)) {
-    return true;
-  }
-
-  return false;
+  return query.startsWith('http://') ||
+         query.startsWith('https://') ||
+         /^[a-zA-Z0-9][-a-zA-Z0-9]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)+/.test(query);
 }
 
 function handleEnterKey() {
@@ -637,8 +603,8 @@ function handleEscapeKey() {
 }
 
 async function init() {
-  await loadConfig();
-  await loadBookmarks();
+  await loadData();
+  applyConfig();
 }
 
 init();
